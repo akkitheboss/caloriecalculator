@@ -15,6 +15,7 @@ const GOAL_ADJUSTMENT = {
 const form = document.getElementById("calorie-form");
 const errorEl = document.getElementById("error");
 const resultsEl = document.getElementById("results");
+const submitButton = form.querySelector("button[type=\"submit\"]");
 
 function toKg(weight, unit) {
   return unit === "lb" ? weight * 0.45359237 : weight;
@@ -31,7 +32,13 @@ function calculateBMR({ sex, age, weightKg, heightCm }) {
   return 10 * weightKg + 6.25 * heightCm - 5 * age - 161;
 }
 
-function validate({ sex, age, weight, height, activity }) {
+function isValidEmail(email) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+}
+
+function validate({ name, email, sex, age, weight, height, activity }) {
+  if (!name || name.trim().length < 2) return "Please enter your full name.";
+  if (!isValidEmail(email)) return "Please enter a valid email address.";
   if (!sex || !activity) return "Please choose sex and activity level.";
   if (!Number.isFinite(age) || age < 10 || age > 100) return "Age must be between 10 and 100.";
   if (!Number.isFinite(weight) || weight <= 0) return "Weight must be a positive number.";
@@ -39,10 +46,26 @@ function validate({ sex, age, weight, height, activity }) {
   return "";
 }
 
-form.addEventListener("submit", (event) => {
+async function saveLead(payload) {
+  const response = await fetch("/api/lead", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    throw new Error(data.error || "Could not save your details. Please try again.");
+  }
+}
+
+form.addEventListener("submit", async (event) => {
   event.preventDefault();
   errorEl.textContent = "";
+  resultsEl.classList.add("hidden");
 
+  const name = document.getElementById("name").value;
+  const email = document.getElementById("email").value;
   const sex = document.getElementById("sex").value;
   const age = Number(document.getElementById("age").value);
   const weight = Number(document.getElementById("weight").value);
@@ -52,9 +75,8 @@ form.addEventListener("submit", (event) => {
   const activity = document.getElementById("activity").value;
   const goal = document.getElementById("goal").value;
 
-  const message = validate({ sex, age, weight, height, activity });
+  const message = validate({ name, email, sex, age, weight, height, activity });
   if (message) {
-    resultsEl.classList.add("hidden");
     errorEl.textContent = message;
     return;
   }
@@ -65,6 +87,31 @@ form.addEventListener("submit", (event) => {
   const bmr = calculateBMR({ sex, age, weightKg, heightCm });
   const tdee = bmr * ACTIVITY_MULTIPLIERS[activity];
   const goalCalories = tdee + GOAL_ADJUSTMENT[goal];
+
+  submitButton.disabled = true;
+  submitButton.textContent = "Saving...";
+
+  try {
+    await saveLead({
+      name,
+      email,
+      sex,
+      age,
+      weightKg,
+      heightCm,
+      activity,
+      goal,
+      bmr,
+      tdee,
+      goalCalories,
+    });
+  } catch (error) {
+    errorEl.textContent = error.message;
+    return;
+  } finally {
+    submitButton.disabled = false;
+    submitButton.textContent = "Submit & See Results";
+  }
 
   document.getElementById("bmr-value").textContent = Math.round(bmr).toString();
   document.getElementById("tdee-value").textContent = Math.round(tdee).toString();

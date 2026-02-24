@@ -15,6 +15,16 @@
         <form id="calorie-form" novalidate>
           <div class="grid">
             <label>
+              Full name
+              <input id="name" type="text" minlength="2" placeholder="e.g. Jane Doe" required />
+            </label>
+
+            <label>
+              Email
+              <input id="email" type="email" placeholder="e.g. jane@email.com" required />
+            </label>
+
+            <label>
               Sex
               <select id="sex" required>
                 <option value="">Select sex</option>
@@ -72,8 +82,9 @@
             </label>
           </div>
 
+          <p class="hint">Results are shown after you submit your name and email.</p>
           <p id="error" class="error" aria-live="polite"></p>
-          <button type="submit">Calculate Daily Calories</button>
+          <button type="submit">Submit & See Results</button>
         </form>
 
         <section id="results" class="results hidden" aria-live="polite">

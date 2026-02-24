@@ -93,3 +93,10 @@ button:hover {
 .hidden {
   display: none;
 }
+
+
+.hint {
+  margin-top: 12px;
+  color: #475569;
+  font-size: 0.92rem;
+}
